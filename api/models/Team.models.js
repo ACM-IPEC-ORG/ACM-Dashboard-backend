@@ -17,7 +17,7 @@ const teamDetailSchema=new mongoose.Schema({
     },
     position:{
         type:String,
-        enum:["HOD","conveyner","prime","core","founder"]
+        enum:["HOD","conveyner","prime","core","founder",'t2022','t2023','t2024'],
     },
     social_links:[
         {

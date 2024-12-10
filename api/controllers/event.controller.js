@@ -16,19 +16,20 @@ export const fetchAllEvent=asyncHandler(async(req,res)=>{
 
 export const postEventDetails=asyncHandler(async(req,res)=>{
     try {
-        const {title,description,tagline,poster,session,winners,rules,instagram_post}=req.body;
+        const {title,description,tagline,date,poster,session,winners,rules,instagram_post}=req.body;
 
-        if (!(title&&description&&tagline&&poster&&session&&winners&&rules&&instagram_post)) throw new ApiError(404,"Mention all requried details");
+        if (!(title&&description&&tagline&&session&&winners&&rules&&instagram_post)) throw new ApiError(404,"Mention all requried details");
 
         const newEventDetail=await Event.create({
             title,
             slug,
             description,
             tagline,
-            poster,
+            poster:poster??"",
             session,
             winners,
             rules,
+            date:date||"",
             instagram_post
         })
 
@@ -76,6 +77,68 @@ export const updateEventPoster = async (req, res) => {
   }
 };
 
+export const editEventDetails = async (req, res) => {
+  const updates = req.body; // Extract updates from the request body
+  console.log(updates)
+  try {
+    if (!updates.slug) {
+      return res.status(400).json({ message: "Event slug is required." });
+    }
+
+    // Handle poster upload if provided
+    let poster_obj;
+    if (req.files?.img?.[0]?.path) {
+      const imgLocalPath = req.files.img[0].path;
+      poster_obj = await uploadOnCloudinary(imgLocalPath);
+      if (!poster_obj) throw new ApiError(400, "Failed to upload poster.");
+    }
+    let poster=poster_obj.secure_url
+
+    // Define allowed fields for updates
+    const allowedFields = [
+      "title", "description", "info", "tagline", "TS", "date", "session",
+      "winners", "rules", "instagram_post"
+    ];
+
+    // Filter updates to include only allowed fields
+    const filteredUpdates = Object.keys(updates).reduce((acc, key) => {
+      if (allowedFields.includes(key)) {
+        acc[key] = updates[key];
+      }
+      return acc;
+    }, {});
+
+    // Add poster if updated
+    if (poster) {
+      filteredUpdates.poster = poster;
+    }
+
+    if (Object.keys(filteredUpdates).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update." });
+    }
+
+    // Update the event
+    const updatedEvent = await Event.findOneAndUpdate(
+      { slug: updates.slug }, // Find event by slug
+      { $set: filteredUpdates }, // Apply updates
+      { new: true} // Return the updated document
+    );
+
+    if (!updatedEvent) {
+      return res.status(404).json({ message: "Event not found." });
+    }
+
+    res.status(200).json({ message: "Event updated successfully.", data: updatedEvent });
+
+  } catch (error) {
+    console.error("Error updating event:", error);
+    res.status(500).json({ 
+      message: "An error occurred while updating the event.", 
+      error: error.message 
+    });
+  }
+};
+
 export const postBulkEvents = async (req, res) => {
     const events = req.body; // Expecting an array of event objects
     console.log(events)
@@ -86,7 +149,7 @@ export const postBulkEvents = async (req, res) => {
   
       const formattedEvents = events.map((event) => ({
         title: event.heading,
-        slug: event.slugs,
+        slug: event.slugs.toLowerCase().trim(),
         description: event.intro,
         info: event.info,
         tagline: event.tagline,
@@ -96,6 +159,7 @@ export const postBulkEvents = async (req, res) => {
         winners: event.winners || [],
         rules: event.rules || [],
         instagram_post: [],
+        date:event.date||""
       }));
   
       const savedEvents = await Event.insertMany(formattedEvents);

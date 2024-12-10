@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const eventSchema=new mongoose.Schema({
     title:{
         type:String,
+        unique:true,
         required:true
     },
     slug:{
@@ -19,6 +20,9 @@ const eventSchema=new mongoose.Schema({
         type:String
     },
     TS:{
+        type:String
+    },
+    date:{
         type:String
     },
     poster:{

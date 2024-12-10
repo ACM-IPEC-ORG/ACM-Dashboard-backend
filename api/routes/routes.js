@@ -2,7 +2,7 @@ import { Router } from "express";
 import { upload, verifyJWT} from "../middlewares/middleware.js";
 import { fetchAllTeam, postTeamData, saveBulkTeamData } from "../controllers/team.controller.js";
 import googleAuth from "../controllers/googleauth.controller.js";
-import { fetchAllEvent, postBulkEvents, updateEventPoster } from "../controllers/event.controller.js";
+import { editEventDetails, fetchAllEvent, postBulkEvents, updateEventPoster } from "../controllers/event.controller.js";
 import multer from "multer";
 
 
@@ -15,12 +15,12 @@ router.get("/events/allEvent",fetchAllEvent)
 router.post("/events/bulk", postBulkEvents);
 
 // Route to update poster for a specific event using its slug
-router.put("/events/:slug/poster",upload.fields([
+router.put("/events/editEvent",upload.fields([
     {
         name:"img",
         maxCount:1
     },
-]), updateEventPoster);
+]), editEventDetails);
 
 // teams routes
 router.get("/teams/allTeam",fetchAllTeam)
